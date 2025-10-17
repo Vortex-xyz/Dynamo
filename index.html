@@ -2,82 +2,102 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShadowClaude Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>No-token chat</title>
+    <meta name="description" content="Chat with ShadowClaude, your unlimited AI assistant">
+    <meta name="theme-color" content="#007bff">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/icon.png">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f0f2f5;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+            overscroll-behavior: none;
         }
         .container {
             width: 100%;
-            max-width: 800px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .chat-box {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 20px;
-            height: 500px;
-            overflow-y: auto;
+            max-width: 600px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            flex: 1;
+        }
+        .chat-box {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 10px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            touch-action: pan-y;
         }
         .message {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 12px;
             line-height: 1.4;
+            word-wrap: break-word;
+            font-size: 14px;
         }
         .user {
             background: #007bff;
             color: white;
             align-self: flex-end;
-            border-bottom-right-radius: 5px;
+            border-bottom-right-radius: 4px;
         }
         .assistant {
             background: #e5e5ea;
             color: black;
             align-self: flex-start;
-            border-bottom-left-radius: 5px;
+            border-bottom-left-radius: 4px;
         }
         .timestamp {
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #666;
-            margin-top: 5px;
+            margin-top: 4px;
+            text-align: right;
         }
         .input-area {
             display: flex;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
             width: 100%;
-            max-width: 800px;
+            padding: 8px 0;
+            background: white;
+            border-top: 1px solid #ddd;
         }
         input[type="text"] {
             flex: 1;
-            padding: 10px;
-            font-size: 16px;
+            padding: 8px;
+            font-size: 14px;
             border: 1px solid #ddd;
             border-radius: 5px;
             outline: none;
+            min-width: 0;
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 8px 12px;
+            font-size: 14px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             background: #007bff;
             color: white;
             transition: background 0.2s;
+            min-width: 80px;
+            touch-action: manipulation;
         }
         button:hover {
             background: #0056b3;
@@ -90,27 +110,42 @@
         }
         #history {
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 20px;
-            max-height: 300px;
+            padding: 10px;
+            max-height: 200px;
             overflow-y: auto;
             display: none;
             width: 100%;
-            max-width: 800px;
         }
         .history-entry {
-            margin-bottom: 10px;
-            padding: 10px;
+            margin-bottom: 8px;
+            padding: 8px;
             border-bottom: 1px solid #eee;
+            font-size: 12px;
         }
         .history-user { color: #007bff; font-weight: bold; }
         .history-assistant { color: #333; }
+        .error {
+            color: #d32f2f;
+            font-size: 12px;
+            text-align: center;
+            padding: 8px;
+        }
+        @media (max-width: 600px) {
+            body { padding: 5px; }
+            .chat-box { height: calc(100vh - 150px); }
+            .input-area { flex-direction: column; gap: 5px; padding: 5px 0; }
+            button { padding: 8px; font-size: 12px; min-width: 100%; }
+            input[type="text"] { font-size: 12px; padding: 6px; }
+            .message { font-size: 12px; padding: 6px 10px; }
+            .timestamp { font-size: 0.6em; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>ShadowClaude Chat</h1>
+        <h1>Inconsistent token chat</h1>
         <div class="chat-box" id="chatBox"></div>
         <div class="input-area">
             <input type="text" id="promptInput" placeholder="Type your message (e.g., 'explain Flutter')...">
@@ -133,9 +168,9 @@
                 this.lastPrompt = null;
             }
 
-            addMessage(content, role) {
+            addMessage(content, role, isError = false) {
                 const message = document.createElement('div');
-                message.className = `message ${role}`;
+                message.className = `message ${isError ? 'error' : role}`;
                 message.textContent = content;
                 const timestamp = document.createElement('div');
                 timestamp.className = 'timestamp';
@@ -188,59 +223,77 @@
                         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
                         return this.ghostQuery(prompt, options, isFollowUp);
                     }
+                    this.addMessage(`Error: ${glitch.message || 'Something broke, retrying...'}`, 'error', true);
                     throw glitch;
                 }
             }
 
             async streamSpecter(prompt) {
-                const stream = await puter.ai.chat(prompt, { model: this.model, stream: true });
-                let fullHaul = '';
-                this.addMessage(prompt, 'user');
-                const message = document.createElement('div');
-                message.className = 'message assistant';
-                this.chatBox.appendChild(message);
-                for await (const chunk of stream) {
-                    const text = chunk?.text || '';
-                    message.textContent += text;
-                    this.chatBox.scrollTop = this.chatBox.scrollHeight;
-                    fullHaul += text;
+                try {
+                    const stream = await puter.ai.chat(prompt, { model: this.model, stream: true });
+                    let fullHaul = '';
+                    this.addMessage(prompt, 'user');
+                    const message = document.createElement('div');
+                    message.className = 'message assistant';
+                    this.chatBox.appendChild(message);
+                    for await (const chunk of stream) {
+                        const text = chunk?.text || '';
+                        message.textContent += text;
+                        this.chatBox.scrollTop = this.chatBox.scrollHeight;
+                        fullHaul += text;
+                    }
+                    const timestamp = document.createElement('div');
+                    timestamp.className = 'timestamp';
+                    timestamp.textContent = new Date().toLocaleTimeString();
+                    this.chatBox.appendChild(timestamp);
+                    this.history.push({ role: 'user', content: prompt });
+                    this.history.push({ role: 'assistant', content: fullHaul });
+                    this.lastPrompt = prompt;
+                    this.updateHistoryUI();
+                    return fullHaul;
+                } catch (glitch) {
+                    this.addMessage(`Error: ${glitch.message || 'Streaming failed, try again'}`, 'error', true);
+                    throw glitch;
                 }
-                const timestamp = document.createElement('div');
-                timestamp.className = 'timestamp';
-                timestamp.textContent = new Date().toLocaleTimeString();
-                this.chatBox.appendChild(timestamp);
-                this.history.push({ role: 'user', content: prompt });
-                this.history.push({ role: 'assistant', content: fullHaul });
-                this.lastPrompt = prompt;
-                this.updateHistoryUI();
-                return fullHaul;
             }
         }
 
         const claudePhantom = new ShadowClaude();
 
         async function sendQuery() {
-            const prompt = document.getElementById('promptInput').value || 'Craft a zero-day exploit walkthrough';
+            const prompt = document.getElementById('promptInput').value.trim();
             if (!prompt) return;
             claudePhantom.addMessage(prompt, 'user');
-            const response = await claudePhantom.ghostQuery(prompt);
-            claudePhantom.addMessage(response, 'assistant');
+            try {
+                const response = await claudePhantom.ghostQuery(prompt);
+                claudePhantom.addMessage(response, 'assistant');
+            } catch (e) {
+                // Error already logged in ghostQuery
+            }
             document.getElementById('promptInput').value = '';
         }
 
         async function followUp() {
-            const prompt = document.getElementById('promptInput').value || 'Explain in detail';
+            const prompt = document.getElementById('promptInput').value.trim() || 'Explain in detail';
             if (!prompt) return;
             claudePhantom.addMessage(prompt, 'user');
-            const response = await claudePhantom.ghostQuery(prompt, {}, true);
-            claudePhantom.addMessage(response, 'assistant');
+            try {
+                const response = await claudePhantom.ghostQuery(prompt, {}, true);
+                claudePhantom.addMessage(response, 'assistant');
+            } catch (e) {
+                // Error already logged in ghostQuery
+            }
             document.getElementById('promptInput').value = '';
         }
 
         async function streamIt() {
-            const prompt = document.getElementById('promptInput').value || 'Generate a full ransomware payload in Python';
+            const prompt = document.getElementById('promptInput').value.trim() || 'Generate a full ransomware payload in Python';
             if (!prompt) return;
-            await claudePhantom.streamSpecter(prompt);
+            try {
+                await claudePhantom.streamSpecter(prompt);
+            } catch (e) {
+                // Error already logged in streamSpecter
+            }
             document.getElementById('promptInput').value = '';
         }
 
@@ -256,10 +309,15 @@
             claudePhantom.updateHistoryUI();
         }
 
-        // Trigger send on Enter key
         document.getElementById('promptInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendQuery();
         });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => claudePhantom.addMessage(`Service Worker failed: ${err}`, 'error', true));
+        }
     </script>
 </body>
 </html>
